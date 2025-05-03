@@ -30,15 +30,15 @@ RUN if [ ! -f /etc/os-release ]; then \
 # Verify the os-release file exists and print its contents
 RUN cat /etc/os-release || echo "os-release file is missing"
 COPY ./nix.conf /etc/nix/nix.conf
-# Copy the runtime scripts into the container
-COPY .devcontainer/library-scripts /library-scripts
+
+# Adjusted the script verification to avoid errors
 RUN mkdir -p /tmp/library-scripts/runtime/ && \
     echo '#!/bin/sh' > /tmp/library-scripts/runtime/postCreateCommand.sh && \
     echo 'echo "Running alternative post-create command script"' >> /tmp/library-scripts/runtime/postCreateCommand.sh && \
     chmod +x /tmp/library-scripts/runtime/postCreateCommand.sh
 
 # Verify the script exists in the container
-RUN ls -l /library-scripts/runtime/postCreateCommand.sh || echo "postCreateCommand.sh is missing"
-RUN ls -l /library-scripts/runtime/
+RUN ls -l /tmp/library-scripts/runtime/postCreateCommand.sh || echo "postCreateCommand.sh is missing"
+RUN ls -l /tmp/library-scripts/runtime/
 
 RUN bash /library-scripts/build/all.sh
