@@ -1,0 +1,61 @@
+name: "Release Dev Container Templates & Generate Documentation"
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+
+      - name: "Set namespace"
+        id: set-namespace
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "namespace=lucernae/devcontainer-nix" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "namespace=lucernae/devcontainer-nix/develop" >> $GITHUB_OUTPUT
+          else
+            echo "namespace=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Publish Templates"
+        if: ${{ steps.set-namespace.outputs.namespace != '' }}
+        uses: devcontainers/action@v1
+        with:
+          publish-templates: "true"
+          base-path-to-templates: "./templates/src"
+          generate-docs: "true"
+          templates-namespace: "${{ steps.set-namespace.outputs.namespace }}"
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create PR for Documentation
+        if: ${{ steps.set-namespace.outputs.namespace != '' }}
+        id: push_image_info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Start."
+
+          # Configure git and Push updates
+          git config --global user.email github-actions@github.com
+          git config --global user.name github-actions
+          git config pull.rebase false
+
+          branch=automated-documentation-update-$GITHUB_RUN_ID
+          git checkout -b $branch
+          message='Automated documentation update'
+
+          # Add / update and commit
+          git add */**/README.md
+          git commit -m 'Automated documentation update [skip ci]' || export NO_UPDATES=true
+
+          # Push
+          if [ "$NO_UPDATES" != "true" ] ; then
+              git push origin "$branch"
+              gh pr create --title "$message" --body "$message"
+          fi

@@ -1,0 +1,1 @@
+etc/nixos/devcontainer-patch.nix

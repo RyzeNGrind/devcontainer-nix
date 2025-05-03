@@ -1,0 +1,12 @@
+version: '3'
+services:
+  devcontainer:
+    image: ghcr.io/lucernae/devcontainer-nix:flake---latest
+    build:
+      context: .
+      dockerfile: Dockerfile-flake
+      args:
+        NIXOS_VERSION: "${NIXOS_VERSION}"
+        MAIN_NIX_CHANNEL: "${MAIN_NIX_CHANNEL}"
+        HOME_MANAGER_CHANNEL: "${HOME_MANAGER_CHANNEL}"
+        NIX_CONFIG: "${BOOTSTRAP_NIX_CONFIG}"

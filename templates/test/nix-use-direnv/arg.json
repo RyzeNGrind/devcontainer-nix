@@ -1,0 +1,8 @@
+{
+    "useDirenv": "true",
+    "useFlake": "false",
+    "installRootPackages": "nixpkgs.curl",
+    "prebuildDefaultPackage": "default.nix",
+    "prebuildNixShell": "shell.nix",
+    "imageVariant": "latest"
+}

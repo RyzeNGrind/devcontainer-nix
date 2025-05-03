@@ -1,0 +1,152 @@
+name: latest-build-nixos
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .devcontainer/nixos/**
+      - .github/workflows/build-push-latest-nixos.yaml
+    branches:
+      - develop
+      - main
+  push:
+    tags:
+      - v*
+    paths:
+      - .devcontainer/nixos/**
+      - .github/workflows/build-push-latest-nixos.yaml
+    branches:
+      - develop
+      - main
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nix_channel:
+          - nixos_channel: "nixos-unstable"
+            home_manager_version_string: "master"
+            main_nix_channel: "https://nixos.org/channels/nixos-unstable"
+            home_manager_channel: "https://github.com/nix-community/home-manager/archive/master.tar.gz"
+            default_tag: false
+          - nixos_channel: "nixos-23.05"
+            home_manager_version_string: "release-23.05"
+            main_nix_channel: "https://nixos.org/channels/nixos-23.05"
+            home_manager_channel: "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz"
+            default_tag: true
+    steps:
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/lucernae/devcontainer-nix
+          flavor: |
+            latest=false
+            prefix=nixos-dockertools--${{matrix.nix_channel.nixos_channel}}---
+          tags: |
+            type=raw,value=stable,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            type=raw,value=stable${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=ref,event=tag
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{major}}.{{minor}}.{{patch}}
+            type=semver${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},pattern=v{{version}}
+            type=semver${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},pattern=v{{major}}
+            type=semver${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},pattern=v{{major}}.{{minor}}
+            type=semver${{ matrix.nix_channel.default_tag && ',prefix=nixos-dockertools---' || '' }},pattern=v{{major}}.{{minor}}.{{patch}}
+      - name: Build image
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: .devcontainer/nixos
+          push: ${{ github.event.pull_request.base.repo.url == github.event.pull_request.head.repo.url }}
+          build-args: |
+            NIXOS_VERSION=${{matrix.nix_channel.nixos_channel}}
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=test
+            type=gha,scope=prod
+          cache-to: type=gha,scope=prod
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+# Commented out. possibly useful in the future
+#  smoke-test:
+#    runs-on: ubuntu-latest
+#    needs:
+#      - docker-build
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        docker_platform:
+#          - linux/amd64
+#          - linux/arm64
+#        nix_channel:
+#          - nixos_channel: "nixos-unstable"
+#            home_manager_version_string: "master"
+#            main_nix_channel: "https://nixos.org/channels/nixos-unstable"
+#            home_manager_channel: "https://github.com/nix-community/home-manager/archive/master.tar.gz"
+#          - nixos_channel: "nixos-23.05"
+#            home_manager_version_string: "release-23.05"
+#            main_nix_channel: "https://nixos.org/channels/nixos-23.05"
+#            home_manager_channel: "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz"
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v2
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v2
+#      - uses: cachix/install-nix-action@v22
+#        with:
+#          nix_path: nixpkgs=channel:${{matrix.nix_channel.nixos_channel}}
+#          extra_nix_config: |
+#            filter-syscalls = false
+#            experimental-features = nix-command flakes
+#            extra-platforms = aarch64-linux
+#      - uses: DeterminateSystems/magic-nix-cache-action@main
+#
+#      - name: Run docker-compose services
+#        working-directory: .devcontainer/nixos
+#        env:
+#          DOCKER_PLATFORM: "${{matrix.docker_platform}}"
+#          DEVCONTAINER_IMAGE_TAG: "${{needs.docker-build.outputs.docker_output_tags}}"
+#        run: |
+#          docker-compose up -d
+#          sleep 5
+#          docker-compose exec -T devcontainer uname -a
+#
+#      - name: Run Smoke test
+#        working-directory: .devcontainer/nixos
+#        env:
+#          DOCKER_PLATFORM: "${{matrix.docker_platform}}"
+#          DEVCONTAINER_IMAGE_TAG: "${{needs.docker-build.outputs.docker_output_tags}}"
+#        run: |
+#          cat << EOF | docker-compose exec -T devcontainer bash
+#          node --version
+#          nix-env --version
+#          nix --version
+#          nix-channel --list
+#          systemctl start nix-daemon
+#          systemctl start dbus
+#          nix-channel --update
+#          uname -a
+#          EOF
