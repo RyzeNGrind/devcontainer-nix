@@ -23,7 +23,7 @@ services:
         NIXOS_VERSION: "${NIXOS_VERSION}"
         MAIN_NIX_CHANNEL: "${MAIN_NIX_CHANNEL}"
         HOME_MANAGER_CHANNEL: "${HOME_MANAGER_CHANNEL}"
-        NIX_CONFIG: "${BOOTSTRAP_NIX_CONFIG}"
+        BOOTSTRAP_NIX_CONFIG: "${BOOTSTRAP_NIX_CONFIG}"
       # Ensure image is properly tagged
       tags:
         - "devcontainer-nix-custom:latest"
@@ -44,10 +44,10 @@ services:
     environment:
       NIX_MULTI_USER: "true"
       NIX_REMOTE: "daemon"
-      NIXOS_VERSION: "23.05"
-      MAIN_NIX_CHANNEL: "https://nixos.org/channels/nixos-23.05"
-      HOME_MANAGER_CHANNEL: "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz"
-      BOOTSTRAP_NIX_CONFIG: "sandbox = false"
+      NIXOS_VERSION: "24.11"
+      MAIN_NIX_CHANNEL: "https://nixos.org/channels/nixos-24.11"
+      HOME_MANAGER_CHANNEL: "https://github.com/nix-community/home-manager/archive/release-24.11.tar.gz"
+      BOOTSTRAP_NIX_CONFIG: "${BOOTSTRAP_NIX_CONFIG}"
 
     # Uncomment the next four lines if you will use a ptrace-based debugger like C++, Go, and Rust.
     # cap_add:

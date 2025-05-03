@@ -29,7 +29,7 @@ RUN set -ex \
     && mkdir -p /nix/var/nix/profiles/per-user/root/channels \
     && if [ ! -f /etc/os-release ]; then \
           echo "NAME=NixOS" > /etc/os-release && \
-          echo "VERSION=23.05" >> /etc/os-release && \
+          echo "VERSION=24.11" >> /etc/os-release && \
           echo "ID=nixos" >> /etc/os-release; \
        fi \
     && chown -R vscode:vscode /tmp/library-scripts /usr/local/lib/library-scripts

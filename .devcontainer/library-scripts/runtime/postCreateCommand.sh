@@ -12,7 +12,7 @@ if nix-channel --list | grep -q "nixpkgs"; then
     nix-channel --update
 else
     echo "Adding and updating nixpkgs channel..."
-    nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs
+    nix-channel --add https://nixos.org/channels/nixpkgs-24.11 nixpkgs
     nix-channel --update
 fi
 echo "PostCreateCommand script completed."

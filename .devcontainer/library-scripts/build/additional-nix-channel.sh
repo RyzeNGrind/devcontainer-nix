@@ -5,7 +5,7 @@ prevIFS=$IFS
 # Ensure default nixpkgs channel exists
 if ! nix-channel --list | grep -q "nixpkgs"; then
     echo "Adding default nixpkgs channel"
-    nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs
+    nix-channel --add https://nixos.org/channels/nixpkgs-24.11 nixpkgs
     nix-channel --update
 fi
 
