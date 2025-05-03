@@ -14,7 +14,8 @@ ENV PREBUILD_HOME_MANAGER=""
 ENV PREBUILD_HOME_MANAGER_FLAKE=""
 
 # Initialize the root user's Nix profile and add default nixpkgs channel
-RUN mkdir -p /root/.nix-profile /root/.nix-defexpr /root/.nix-channels && \
+RUN mkdir -p /root/.nix-profile /root/.nix-defexpr && \
+    [ ! -d /root/.nix-channels ] || rm -rf /root/.nix-channels && \
     ln -s /nix/var/nix/profiles/per-user/root/profile /root/.nix-profile && \
     ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-defexpr && \
     ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-channels && \
