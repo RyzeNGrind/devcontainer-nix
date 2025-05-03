@@ -18,7 +18,7 @@ services:
     #image: ghcr.io/lucernae/devcontainer-nix:v1
     build:
       context: .
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: Dockerfile
       args:
         NIXOS_VERSION: "${NIXOS_VERSION}"
         MAIN_NIX_CHANNEL: "${MAIN_NIX_CHANNEL}"
