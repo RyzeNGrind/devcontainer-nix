@@ -28,15 +28,18 @@ RUN mkdir -p /root/.nix-profile /root/.nix-defexpr || true && \
     nix-channel --list || (nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs && \
     nix-channel --update)
 
-# Add fallback for os-release file
+# Handle os-release safely - instead of directly writing to /etc, create a local version
 RUN if [ ! -f /etc/os-release ]; then \
-    echo "NAME=NixOS" > /etc/os-release && \
-    echo "VERSION=23.05" >> /etc/os-release && \
-    echo "ID=nixos" >> /etc/os-release; \
+    echo "Using local os-release file since system one is missing" && \
+    mkdir -p /tmp/os-info && \
+    echo "NAME=NixOS" > /tmp/os-info/os-release && \
+    echo "VERSION=23.05" >> /tmp/os-info/os-release && \
+    echo "ID=nixos" >> /tmp/os-info/os-release; \
     fi
 
 # Verify the os-release file exists and print its contents
-RUN cat /etc/os-release || echo "os-release file is missing"
+RUN cat /etc/os-release 2>/dev/null || cat /tmp/os-info/os-release 2>/dev/null || echo "os-release file is missing"
+
 COPY ./nix.conf /etc/nix/nix.conf
 # Copy the runtime scripts into the container
 COPY .devcontainer/library-scripts /library-scripts
