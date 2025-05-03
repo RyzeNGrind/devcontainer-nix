@@ -14,12 +14,20 @@ ENV PREBUILD_HOME_MANAGER=""
 ENV PREBUILD_HOME_MANAGER_FLAKE=""
 
 # Initialize the root user's Nix profile and add default nixpkgs channel
-RUN mkdir -p /root/.nix-profile /root/.nix-defexpr /root/.nix-channels && \
-    ln -s /nix/var/nix/profiles/per-user/root/profile /root/.nix-profile && \
-    ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-defexpr && \
-    ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-channels && \
-    nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs && \
-    nix-channel --update
+RUN mkdir -p /root/.nix-profile /root/.nix-defexpr || true && \
+    mkdir -p /root/.nix-channels || true && \
+    # Remove existing targets if they're files rather than symlinks
+    rm -f /root/.nix-profile 2>/dev/null || true && \
+    rm -f /root/.nix-defexpr 2>/dev/null || true && \
+    rm -f /root/.nix-channels 2>/dev/null || true && \
+    # Create the symlinks if they don't exist
+    [ -L /root/.nix-profile ] || ln -sf /nix/var/nix/profiles/per-user/root/profile /root/.nix-profile 2>/dev/null || true && \
+    [ -L /root/.nix-defexpr ] || ln -sf /nix/var/nix/profiles/per-user/root/channels /root/.nix-defexpr 2>/dev/null || true && \
+    [ -L /root/.nix-channels ] || ln -sf /nix/var/nix/profiles/per-user/root/channels /root/.nix-channels 2>/dev/null || true && \
+    # Skip these commands if any of the above failed
+    nix-channel --list || (nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs && \
+    nix-channel --update)
+
 # Add fallback for os-release file
 RUN if [ ! -f /etc/os-release ]; then \
     echo "NAME=NixOS" > /etc/os-release && \
