@@ -13,20 +13,33 @@ ENV ADDITIONAL_NIX_FLAKE_REGISTRY=""
 ENV PREBUILD_HOME_MANAGER=""
 ENV PREBUILD_HOME_MANAGER_FLAKE=""
 
-# Initialize the root user's Nix profile and add default nixpkgs channel
-RUN mkdir -p /root/.nix-profile /root/.nix-defexpr && \
-    [ ! -d /root/.nix-channels ] || rm -rf /root/.nix-channels && \
-    ln -s /nix/var/nix/profiles/per-user/root/profile /root/.nix-profile && \
-    ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-defexpr && \
-    ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-channels && \
-    nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs && \
-    nix-channel --update
-# Add fallback for os-release file
+# Switch to root user to execute commands requiring root permissions
+USER root
+
+# Add fallback for os-release file with proper permissions
 RUN if [ ! -f /etc/os-release ]; then \
     echo "NAME=NixOS" > /etc/os-release && \
     echo "VERSION=23.05" >> /etc/os-release && \
     echo "ID=nixos" >> /etc/os-release; \
-    fi
+    fi || echo "Failed to write to /etc/os-release, continuing anyway"
+
+# Ensure proper setup of Nix symbolic links and directories
+RUN mkdir -p /root/.nix-profile /root/.nix-defexpr && \
+    [ ! -e /root/.nix-channels ] || rm -rf /root/.nix-channels && \
+    [ -L /root/.nix-profile ] || ln -s /nix/var/nix/profiles/per-user/root/profile /root/.nix-profile && \
+    [ -L /root/.nix-defexpr/channels ] || ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-defexpr && \
+    [ -L /root/.nix-channels ] || ln -s /nix/var/nix/profiles/per-user/root/channels /root/.nix-channels && \
+    if [ -e /nix/var/nix/profiles/per-user/root/channels ]; then \
+        if [ ! -d /nix/var/nix/profiles/per-user/root/channels ]; then \
+            rm -rf /nix/var/nix/profiles/per-user/root/channels; \
+        fi; \
+    fi && \
+    mkdir -p /nix/var/nix/profiles/per-user/root/channels && \
+    nix-channel --add https://nixos.org/channels/nixpkgs-23.05 nixpkgs && \
+    nix-channel --update || echo "nix-channel update failed, continuing anyway"
+
+# Switch back to vscode user
+USER vscode
 
 # Verify the os-release file exists and print its contents
 RUN cat /etc/os-release || echo "os-release file is missing"
