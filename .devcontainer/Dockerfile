@@ -55,4 +55,8 @@ RUN mkdir -p /tmp/library-scripts/runtime/ && \
 RUN ls -l /tmp/library-scripts/runtime/postCreateCommand.sh || echo "postCreateCommand.sh is missing"
 RUN ls -l /tmp/library-scripts/runtime/
 
-RUN bash /library-scripts/build/all.sh
+# Copy build scripts into the image
+COPY ./library-scripts /tmp/library-scripts/
+
+# Correct the path to the build script
+RUN bash /tmp/library-scripts/build/all.sh
