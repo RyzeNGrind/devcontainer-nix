@@ -45,12 +45,17 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"KaliaHayes.kolada",
 				"arrterian.nix-env-selector",
 				"bbenoist.Nix",
 				"jnoortheen.nix-ide",
-				"brettm12345.nixfmt-vscode",
-				"mkhl.direnv"
-			]
+				"kamadorueda.alejandra",
+				"mkhl.direnv",
+				"ieviev.nix-vscode-completions"
+			],
+			"settings": {
+				"workbench.colorTheme": "Kolada"
+			}
 		}
 	}
 }
